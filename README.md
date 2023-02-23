@@ -15,6 +15,6 @@ Before starting you will need to dump the RomFS of your game and then follow the
     * The files on the Romfs path won't be modified.
 * Adjust the randomization settings.
 * Click the **Randomize** button.
-* Wait for the program to do it's work
-* If everything went well then the program will display a **All done!** message in the text box.
+* Wait for the program to do its work
+* If everything went well then the program will display an **All done!** message in the text box.
 * After that go to the output folder and copy the **Data** folder and paste it on your mods folder.
