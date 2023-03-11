@@ -148,37 +148,94 @@ class Job():
     #     Returns a list where the first value is the main proficiency and the second one is the sub proficiency (if applicable)
     #     """
 
-    def get_job_weapons(self) -> list[ItemType]:
+    def get_job_weapons(self, pProficiencies:list[Proficiency] = None) -> list[ItemType]:
         job_weapons = []
         job_variant_weapons = [] # For jobs that have variant weapon types (General, Paladin, Hero, etc)
+        job_tertiary_weapons = []
+        proficiencies_names = [x.name for x in pProficiencies] if pProficiencies else None
         if self.WeaponSword != "0":
             weapon_type = ItemType.SWORD
-            job_weapons.append(weapon_type) if self.WeaponSword == "1" else job_variant_weapons.append(weapon_type)
+            if pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponSword == "1":
+                    job_weapons.append(weapon_type)
+                elif self.WeaponSword == "2":
+                    job_variant_weapons.append(weapon_type)
+                elif self.WeaponSword == "3":
+                    job_tertiary_weapons.append(weapon_type)
         if self.WeaponLance != "0":
             weapon_type = ItemType.LANCE
-            job_weapons.append(weapon_type) if self.WeaponLance == "1" else job_variant_weapons.append(weapon_type)
+            if pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponLance == "1":
+                    job_weapons.append(weapon_type)
+                elif self.WeaponLance == "2":
+                    job_variant_weapons.append(weapon_type)
+                elif self.WeaponLance == "3":
+                    job_tertiary_weapons.append(weapon_type)
         if self.WeaponAxe != "0":
             weapon_type = ItemType.AXE
-            job_weapons.append(weapon_type) if self.WeaponAxe == "1" else job_variant_weapons.append(weapon_type)
+            if pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponAxe == "1":
+                    job_weapons.append(weapon_type)
+                elif self.WeaponAxe == "2":
+                    job_variant_weapons.append(weapon_type)
+                elif self.WeaponAxe == "3":
+                    job_tertiary_weapons.append(weapon_type)
         if self.WeaponBow != "0":
             weapon_type = ItemType.BOW
-            job_weapons.append(weapon_type) if self.WeaponBow == "1" else job_variant_weapons.append(weapon_type)
+            if pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponBow == "1":
+                    job_weapons.append(weapon_type)
+                elif self.WeaponBow == "2":
+                    job_variant_weapons.append(weapon_type)
+                elif self.WeaponBow == "3":
+                    job_tertiary_weapons.append(weapon_type)
         if self.WeaponDagger != "0":
             weapon_type = ItemType.DAGGER
-            job_weapons.append(weapon_type) if self.WeaponDagger == "1" else job_variant_weapons.append(weapon_type)
+            if pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponDagger == "1":
+                    job_weapons.append(weapon_type)
+                elif self.WeaponDagger == "2":
+                    job_variant_weapons.append(weapon_type)
+                elif self.WeaponDagger == "3":
+                    job_tertiary_weapons.append(weapon_type)
         if self.WeaponMagic != "0":
             weapon_type = ItemType.TOME
-            job_weapons.append(weapon_type) if self.WeaponMagic == "1" else job_variant_weapons.append(weapon_type)
+            if pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponMagic == "1":
+                    job_weapons.append(weapon_type)
+                elif self.WeaponMagic == "2":
+                    job_variant_weapons.append(weapon_type)
+                elif self.WeaponMagic == "3":
+                    job_tertiary_weapons.append(weapon_type)
         if self.WeaponRod != "0":
             weapon_type = ItemType.STAFF
-            job_weapons.append(weapon_type) if self.WeaponRod == "1" else job_variant_weapons.append(weapon_type)
+            if pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponRod == "1":
+                    job_weapons.append(weapon_type)
+                elif self.WeaponRod == "2":
+                    job_variant_weapons.append(weapon_type)
+                elif self.WeaponRod == "3":
+                    job_tertiary_weapons.append(weapon_type)
         if self.WeaponFist != "0":
             weapon_type = ItemType.ART
-            job_weapons.append(weapon_type) if self.WeaponFist == "1" else job_variant_weapons.append(weapon_type)
+            if pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponFist == "1":
+                    job_weapons.append(weapon_type)
+                elif self.WeaponFist == "2":
+                    job_variant_weapons.append(weapon_type)
+                elif self.WeaponFist == "3":
+                    job_tertiary_weapons.append(weapon_type)
 
         # Randomly add a variant weapon to the main job_weapons array
         if job_variant_weapons:
-            job_weapons += [random.choice(job_variant_weapons)]
+            # Handle case for advanced classes where the main weapon is variant
+            if not job_weapons:
+                job_weapons = [x for x in job_variant_weapons if x.name == pProficiencies[0].name]
+            else:
+                job_weapons += [random.choice(job_variant_weapons)]
+        
+        if job_tertiary_weapons:
+            job_weapons += job_tertiary_weapons
 
         return job_weapons
     

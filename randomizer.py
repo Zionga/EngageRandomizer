@@ -7,7 +7,7 @@ import random
 import UnityPy
 import copy
 from items import SID_SMASH, Item, ItemType
-from jobs import Job
+from jobs import Job, Proficiency
 from settings import BANNED_WEAPONS, GenericSetting, RecruitmentOrder, BANNED_JIDS
 
 from units import Unit
@@ -64,6 +64,7 @@ class Randomizer():
             
             self.recruitment = int(self.recruitment)
             self.bases = int(self.bases)
+            self.unit_job = int(self.unit_job)
             self.swap_stat = int(self.swap_stat)
 
             self.print_settings()
@@ -117,24 +118,34 @@ class Randomizer():
             if not job_filter:
                 raise Exception(f"[randomize_units] Couldn't find Jid '{og_unit.Jid}'")
             og_job = job_filter[0]
+            new_job_rank = og_job.Rank
+            if og_job.MaxLevel == "40":
+                # If the original class is a special class (Dancer, Thief, Fell Dragon) then we pick a basic or advanced class depending on the original unit's level
+                new_job_rank = "1" if int(og_unit.Level) > 20 else "0"
             
             if self.unit_job == GenericSetting.RANDOM.value:
                 # Pick a new class with the same rank
-                new_job = random.choice([job for job in self.jobs if job.Rank == og_job.Rank and job.Jid != unit.Jid and job.Jid not in BANNED_JIDS])
+                new_job = random.choice([job for job in self.jobs if job.Rank == new_job_rank and job.Jid != unit.Jid and job.Jid not in BANNED_JIDS])
             else:
                 # Keep the same class line but promote or demote depending on the unit who is going to be replaced
-                new_job = self.promote_demote_job(unit.Jid, og_job.Rank)
+                new_job = self.promote_demote_job(unit.Jid, new_job_rank)
             
             unit.Jid = new_job.Jid
             unit.Job = new_job
 
             # Randomize proficiency
-            # Coming soon™
+            proficiencies = self.get_proficiency(new_job)
+            unit.Aptitude = str(proficiencies[0])
+            unit.SubAptitude = str(proficiencies[1])
 
             # Change stats
             # Level
-            unit.Level = og_unit.Level
-            unit.InternalLevel = og_unit.InternalLevel
+            if int(og_unit.Level) <= 20:
+                unit.Level = og_unit.Level
+                unit.InternalLevel = og_unit.InternalLevel
+            else:
+                unit.Level = str(int(og_unit.Level) - 20)
+                unit.InternalLevel = "20"
             unit.SkillPoint = og_unit.SkillPoint
             
             # Bases
@@ -268,7 +279,8 @@ class Randomizer():
             pItems = [item for item in self.items if item.Iid in item_iids]
 
         # Get the unit's usable weapon types
-        usable_weapon_types = pUnit.Job.get_job_weapons()
+        usable_weapon_types = pUnit.Job.get_job_weapons([Proficiency(int(pUnit.Aptitude)), Proficiency(int(pUnit.SubAptitude))])
+        unit_ranks = self.get_unit_weapon_ranks(pUnit)
         # Loop through each item
         item:Item
         for item in pItems:
@@ -289,18 +301,158 @@ class Randomizer():
                 # # if not new_item:
                 # # new_item = random.choice([x for x in self.items if x.get_item_type() in usable_weapon_types and x.WeaponLevel == item.WeaponLevel and x not in new_items])
                 
-                item_filter = [x for x in self.items if x.get_item_type() in usable_weapon_types and x.WeaponLevel == item.WeaponLevel and x.Iid not in BANNED_WEAPONS and x not in new_items]
+                # If the item is PRF then we will use the highest rank the class can use
+                valid_rank = len([rank for rank in unit_ranks if (not(item.WeaponLevel < rank) or item.WeaponLevel in unit_ranks)]) > 0
+                item_levels = [item.WeaponLevel] if item.EquipCondition == "" and valid_rank else unit_ranks
+                item_filter = [x for x in self.items if x.get_item_type() in usable_weapon_types and self.unit_can_use_weapon(pUnit, x) and x.WeaponLevel in item_levels and x.Iid not in BANNED_WEAPONS and x not in new_items]
                 if not item_filter:
-                    item_filter = [x for x in self.items if x.get_item_type() in usable_weapon_types and x.WeaponLevel == item.WeaponLevel]
+                    item_filter = [x for x in self.items if x.get_item_type() in usable_weapon_types and self.unit_can_use_weapon(pUnit, x) and x.WeaponLevel in item_levels]
                 new_item = random.choice(item_filter)
                 new_items.append(new_item)
-                
             else:
                 # Consumables won't be randomized (at least for now...)
                 new_items.append(item)
 
 
         return new_items
+    
+    def get_proficiency(self, pJob:Job) -> list[Proficiency]:
+        """
+        Gets the proficiencies of a class.
+        Returns a list where the first value is the main proficiency and the second one is the sub proficiency (if applicable)
+        """
+        weapons = [
+            ("Sword", Proficiency.SWORD.value), 
+            ("Lance", Proficiency.LANCE.value), 
+            ("Axe", Proficiency.AXE.value), 
+            ("Bow", Proficiency.BOW.value), 
+            ("Dagger", Proficiency.DAGGER.value), 
+            ("Magic", Proficiency.TOME.value), 
+            ("Rod", Proficiency.STAFF.value), 
+            ("Fist", Proficiency.ART.value), 
+        ]
+        main_weapons = []
+        sub_weapons = []
+        final_weapons = []
+
+        for weapon_tuple in weapons:
+            weapon_attr = f"Weapon{weapon_tuple[0]}"
+            job_weapon_rank = int(getattr(pJob, weapon_attr))
+            if job_weapon_rank > 0:
+                main_weapons.append(weapon_tuple[1]) if job_weapon_rank == 1 else sub_weapons.append(weapon_tuple[1])
+
+        # Check if we already have 2 or more main weapons
+        if len(main_weapons) > 1:
+            # We randomnly pick two weapons
+            random.shuffle(main_weapons)
+            return main_weapons[:2]
+        
+        # Add the subweapons to the pool
+        final_weapons += sub_weapons
+        random.shuffle(final_weapons)
+        final_weapons = main_weapons + final_weapons
+
+        if len(final_weapons) > 1:
+            return final_weapons[:2]
+        
+        # If final_weapons still < 2 then we do the following depending on the class rank:
+        # Special class - We randomnly pick another weapon
+        if pJob.MaxLevel == "40":
+            random_weapon = random.choice([weapon[1] for weapon in weapons if weapon[1] not in final_weapons])
+            final_weapons.append(random_weapon)
+            return final_weapons[:2]
+        
+        # Advanced class - We borrow the proficiencies of the alternative class
+        # Basic class - We borrow the proficiencies of the advanced classes
+        basic_job:Job =  self.promote_demote_job(pJob.Jid, pJob.Rank) if pJob.Rank == "1" else pJob
+
+        advanced_jobs = self.get_related_jobs(basic_job.Jid, "1")
+
+        advanced_main_weapons = []
+        advanced_sub_weapons = []
+        for job in advanced_jobs:
+            weapon_attr = f"Weapon{weapon_tuple[0]}"
+            job_weapon_rank = int(getattr(job, weapon_attr))
+            if job_weapon_rank > 0 and weapon_tuple[1] not in final_weapons:
+                advanced_main_weapons.append(weapon_tuple[1]) if job_weapon_rank == 1 else advanced_sub_weapons.append[weapon_tuple[1]]
+
+        final_weapons += advanced_main_weapons
+
+        # Check if we already have 2 or more main weapons
+        if len(final_weapons) > 1:
+            # We randomnly pick two weapons
+            random.shuffle(final_weapons)
+            return final_weapons[:2]
+        
+        final_weapons += advanced_sub_weapons
+
+        if len(final_weapons) > 1:
+            # We randomnly pick two weapons
+            random.shuffle(final_weapons)
+            return final_weapons[:2]
+        
+        # As a last resort we pick another weapon randomnly
+        random_weapon = random.choice([weapon[1] for weapon in weapons if weapon[1] not in final_weapons])
+        final_weapons.append(random_weapon)
+        return final_weapons[:2]
+
+    def unit_can_use_weapon(self, pUnit:Unit, pItem:Item):
+        """
+        Checks if the unit can use the given weapon
+        """
+        weapons = [
+            ("Sword", ItemType.SWORD.value), 
+            ("Lance", ItemType.LANCE.value), 
+            ("Axe", ItemType.AXE.value), 
+            ("Bow", ItemType.BOW.value), 
+            ("Dagger", ItemType.DAGGER.value), 
+            ("Magic", ItemType.TOME.value), 
+            ("Rod", ItemType.STAFF.value), 
+            ("Fist", ItemType.ART.value), 
+        ]
+
+        for weapon in weapons:
+            # Check if the weapon type matches the class
+            if str(weapon[1]) == pItem.Kind and getattr(pUnit.Job, f"Weapon{weapon[0]}") != "0":
+                # Check if the class has enough rank to use the weapon
+                rank = getattr(pUnit.Job, f"MaxWeaponLevel{weapon[0]}")
+                if rank != "N":
+                    if rank[0] == "S":
+                        return True
+                    valid_rank = not(pItem.WeaponLevel < rank[0])
+                    return valid_rank
+                
+        return False
+
+    def get_unit_weapon_ranks(self, pUnit:Unit) -> list[str]:
+        """
+        Utility function that gets the unit's max weapon ranks
+        """
+        weapons = [
+            "Sword",
+            "Lance",
+            "Axe",
+            "Bow",
+            "Dagger",
+            "Magic",
+            "Rod",
+            "Fist",
+        ]
+
+        ranks = []
+
+        for weapon in weapons:
+            # Check if the class has enough rank to use the weapon
+            rank = getattr(pUnit.Job, f"MaxWeaponLevel{weapon}")
+            if rank != "N":
+                ranks.append(rank[0])
+
+        if len(ranks) == 1 and ranks[0] == "S":
+            # Add A rank to classes that only have a single weapon with S rank
+            ranks.append("A")
+                
+        return ranks
+
 
     def replace_units(self, **kwargs):
         print("Replacing units...")
@@ -713,8 +865,8 @@ class Randomizer():
             # * Price is not 100
             is_weapon = int(child.attrib["Kind"]) <= 8 \
                 and child.attrib["WeaponLevel"] != "" \
-                and child.attrib["EquipCondition"] == "" \
                 and child.attrib["Price"] != "100"
+                # and child.attrib["EquipCondition"] == "" \
             is_consumable = int(child.attrib["Kind"]) == 10 \
                 and child.attrib["Price"] != "100"
             if is_weapon or is_consumable:
@@ -789,7 +941,7 @@ class Randomizer():
 
         return item_list
     
-    def promote_demote_job(self, jid:str, rank:str):
+    def get_related_jobs(self, jid:str, rank:str):
         """
         Returns a basic or advanced job related to the give job and rank.
         If a basic job has multiple advanced jobs then one will be picked at random.
@@ -801,7 +953,7 @@ class Randomizer():
         job = job_filter[0]
 
         if job.Rank == rank:
-            return job
+            return [job]
         
         related_jobs = []
         
@@ -816,7 +968,17 @@ class Randomizer():
             # No jobs found. This may happen with special jobs such as Dancer and Thief
             related_jobs = [job]
         
-        return random.choice(related_jobs)
+        return related_jobs
+    
+    def promote_demote_job(self, jid:str, rank:str):
+        """
+        Returns a basic or advanced job related to the give job and rank.
+        If a basic job has multiple advanced jobs then one will be picked at random.
+        If an avanced job has a basic job that has variant weapons then one will be picked at random. 
+        """
+        related_jobs = self.get_related_jobs(jid, rank)
+        
+        return random.choice(related_jobs) 
 
 
     def edit_person_xml(self, input_path):
@@ -847,6 +1009,8 @@ class Randomizer():
             child.set("Level", random_unit.Level)
             child.set("InternalLevel", random_unit.InternalLevel)
             child.set("SkillPoint", random_unit.SkillPoint)
+            child.set("Aptitude", random_unit.Aptitude)
+            child.set("SubAptitude", random_unit.SubAptitude)
 
             for stat in stats:
                 # Growth rates
@@ -918,5 +1082,6 @@ if __name__ == "__main__":
         output_path = args.output,
         recruitment = args.recruitment,
         bases = args.bases,
+        unit_job = args.job,
         swap_stat = args.swapStat
     )
