@@ -155,73 +155,73 @@ class Job():
         proficiencies_names = [x.name for x in pProficiencies] if pProficiencies else None
         if self.WeaponSword != "0":
             weapon_type = ItemType.SWORD
-            if pProficiencies == None or weapon_type.name in proficiencies_names:
-                if self.WeaponSword == "1":
-                    job_weapons.append(weapon_type)
-                elif self.WeaponSword == "2":
+            if self.WeaponSword == "1":
+                job_weapons.append(weapon_type)
+            elif pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponSword == "2":
                     job_variant_weapons.append(weapon_type)
                 elif self.WeaponSword == "3":
                     job_tertiary_weapons.append(weapon_type)
         if self.WeaponLance != "0":
             weapon_type = ItemType.LANCE
-            if pProficiencies == None or weapon_type.name in proficiencies_names:
-                if self.WeaponLance == "1":
-                    job_weapons.append(weapon_type)
-                elif self.WeaponLance == "2":
+            if self.WeaponLance == "1":
+                job_weapons.append(weapon_type)
+            elif pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponLance == "2":
                     job_variant_weapons.append(weapon_type)
                 elif self.WeaponLance == "3":
                     job_tertiary_weapons.append(weapon_type)
         if self.WeaponAxe != "0":
             weapon_type = ItemType.AXE
-            if pProficiencies == None or weapon_type.name in proficiencies_names:
-                if self.WeaponAxe == "1":
-                    job_weapons.append(weapon_type)
-                elif self.WeaponAxe == "2":
+            if self.WeaponAxe == "1":
+                job_weapons.append(weapon_type)
+            elif pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponAxe == "2":
                     job_variant_weapons.append(weapon_type)
                 elif self.WeaponAxe == "3":
                     job_tertiary_weapons.append(weapon_type)
         if self.WeaponBow != "0":
             weapon_type = ItemType.BOW
-            if pProficiencies == None or weapon_type.name in proficiencies_names:
-                if self.WeaponBow == "1":
-                    job_weapons.append(weapon_type)
-                elif self.WeaponBow == "2":
+            if self.WeaponBow == "1":
+                job_weapons.append(weapon_type)
+            elif pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponBow == "2":
                     job_variant_weapons.append(weapon_type)
                 elif self.WeaponBow == "3":
                     job_tertiary_weapons.append(weapon_type)
         if self.WeaponDagger != "0":
             weapon_type = ItemType.DAGGER
-            if pProficiencies == None or weapon_type.name in proficiencies_names:
-                if self.WeaponDagger == "1":
-                    job_weapons.append(weapon_type)
-                elif self.WeaponDagger == "2":
+            if self.WeaponDagger == "1":
+                job_weapons.append(weapon_type)
+            elif pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponDagger == "2":
                     job_variant_weapons.append(weapon_type)
                 elif self.WeaponDagger == "3":
                     job_tertiary_weapons.append(weapon_type)
         if self.WeaponMagic != "0":
             weapon_type = ItemType.TOME
-            if pProficiencies == None or weapon_type.name in proficiencies_names:
-                if self.WeaponMagic == "1":
-                    job_weapons.append(weapon_type)
-                elif self.WeaponMagic == "2":
+            if self.WeaponMagic == "1":
+                job_weapons.append(weapon_type)
+            elif pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponMagic == "2":
                     job_variant_weapons.append(weapon_type)
                 elif self.WeaponMagic == "3":
                     job_tertiary_weapons.append(weapon_type)
         if self.WeaponRod != "0":
             weapon_type = ItemType.STAFF
-            if pProficiencies == None or weapon_type.name in proficiencies_names:
-                if self.WeaponRod == "1":
-                    job_weapons.append(weapon_type)
-                elif self.WeaponRod == "2":
+            if self.WeaponRod == "1":
+                job_weapons.append(weapon_type)
+            elif pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponRod == "2":
                     job_variant_weapons.append(weapon_type)
                 elif self.WeaponRod == "3":
                     job_tertiary_weapons.append(weapon_type)
         if self.WeaponFist != "0":
             weapon_type = ItemType.ART
-            if pProficiencies == None or weapon_type.name in proficiencies_names:
-                if self.WeaponFist == "1":
-                    job_weapons.append(weapon_type)
-                elif self.WeaponFist == "2":
+            if self.WeaponFist == "1":
+                job_weapons.append(weapon_type)
+            elif pProficiencies == None or weapon_type.name in proficiencies_names:
+                if self.WeaponFist == "2":
                     job_variant_weapons.append(weapon_type)
                 elif self.WeaponFist == "3":
                     job_tertiary_weapons.append(weapon_type)

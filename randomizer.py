@@ -281,6 +281,8 @@ class Randomizer():
         # Get the unit's usable weapon types
         usable_weapon_types = pUnit.Job.get_job_weapons([Proficiency(int(pUnit.Aptitude)), Proficiency(int(pUnit.SubAptitude))])
         unit_ranks = self.get_unit_weapon_ranks(pUnit)
+        # Utility variable that will help us to get at least one weapon to attack with
+        need_weapon = True
         # Loop through each item
         item:Item
         for item in pItems:
@@ -304,11 +306,15 @@ class Randomizer():
                 # If the item is PRF then we will use the highest rank the class can use
                 valid_rank = len([rank for rank in unit_ranks if (not(item.WeaponLevel < rank) or item.WeaponLevel in unit_ranks)]) > 0
                 item_levels = [item.WeaponLevel] if item.EquipCondition == "" and valid_rank else unit_ranks
-                item_filter = [x for x in self.items if x.get_item_type() in usable_weapon_types and self.unit_can_use_weapon(pUnit, x) and x.WeaponLevel in item_levels and x.Iid not in BANNED_WEAPONS and x not in new_items]
+                exclude = [ItemType.STAFF] if need_weapon else []
+                item_filter = [x for x in self.items if x.get_item_type() in usable_weapon_types and self.unit_can_use_weapon(pUnit, x) and x.WeaponLevel in item_levels and x.get_item_type() not in exclude and x.Iid not in BANNED_WEAPONS and x not in new_items]
                 if not item_filter:
-                    item_filter = [x for x in self.items if x.get_item_type() in usable_weapon_types and self.unit_can_use_weapon(pUnit, x) and x.WeaponLevel in item_levels]
+                    item_filter = [x for x in self.items if x.get_item_type() in usable_weapon_types and self.unit_can_use_weapon(pUnit, x) and x.WeaponLevel in item_levels and x.get_item_type() not in exclude]
                 new_item = random.choice(item_filter)
                 new_items.append(new_item)
+
+                if exclude:
+                    need_weapon = False
             else:
                 # Consumables won't be randomized (at least for now...)
                 new_items.append(item)
@@ -419,6 +425,8 @@ class Randomizer():
                 if rank != "N":
                     if rank[0] == "S":
                         return True
+                    elif pItem.WeaponLevel == "S":
+                        return False
                     valid_rank = not(pItem.WeaponLevel < rank[0])
                     return valid_rank
                 
