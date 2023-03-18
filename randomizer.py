@@ -78,8 +78,9 @@ class Randomizer():
                 self.random_units = self.randomize_units()
                 self.edit_person_xml(f"{self.input_path}\\Data\\StreamingAssets\\aa\\Switch\\fe_assets_gamedata\\person.xml.bundle")
                 self.replace_units()
-                print("All done!")
+                self.edit_asset_table_xml()
                 self.delete_temp_files()
+                print("All done!")
                 return True
         except Exception as err:
             print(f"[randomize]: {err}")
@@ -1054,6 +1055,63 @@ class Randomizer():
                 with open(person_output_path + "\\person.xml.bundle", "wb") as new_person_bundle:
                     new_person_bundle.write(unity_env.file.save())
                     new_person_bundle.close()
+
+    def edit_asset_table_xml(self):
+        print("Editing assettable.xml...")
+        
+        unity_env = UnityPy.load(f"{self.input_path}\\Data\\StreamingAssets\\aa\\Switch\\fe_assets_gamedata\\assettable.xml.bundle")
+        assettable_output_path = f"{self.output_path}\\Data\\StreamingAssets\\aa\\Switch\\fe_assets_gamedata"
+        file_path = None
+        
+        # Read and extract the bundle file
+        for obj in unity_env.objects:
+            if obj.type.name == "TextAsset":
+                # Replace the units in the xml
+                assettable_data = obj.read()
+                # Create assettable file in output
+                file_path = f"{self.output_path}\\temp\\assettable.xml"
+                with open(file_path, 'wb') as assettable_file:
+                    assettable_file.write(assettable_data.script)
+                    assettable_file.close()
+        
+        if not file_path:
+            print("Couldn't parse assettable.xml")
+            return None
+
+        # Read and edit assettable.xml
+        tree = ET.parse(f"{self.output_path}\\temp\\assettable.xml")
+        root = tree.getroot()
+        data_node = root.find(".//*[@Name='アセット']/Data")
+
+        # Read the custom assettable.xml
+        tree_custom = ET.parse(".\\xml\\AssetTable.xml")
+        custom_elements = tree_custom.getroot().findall("Param")
+
+        # Add the custom styles to the assettable
+        data_node.extend(custom_elements)
+
+        # Save the new assettable.xml
+        new_assettable_path = f"{self.output_path}\\temp\\assettable_new.xml"
+        tree.write(new_assettable_path, encoding="utf-8")
+
+        # Read and extract the bundle file
+        for obj in unity_env.objects:
+            if obj.type.name == "TextAsset":
+                # Replace the units in the xml
+                assettable_data = obj.read()
+
+                # Add the new assettable xml to the bundle
+                with open(new_assettable_path, "rb") as new_assettable_xml:
+                    assettable_data.script = new_assettable_xml.read()
+                    assettable_data.save()
+                    new_assettable_xml.close()
+                
+                # Save changes in the output path
+                if not os.path.exists(assettable_output_path):
+                    os.makedirs(assettable_output_path)
+                with open(assettable_output_path + "\\assettable.xml.bundle", "wb") as new_assettable_bundle:
+                    new_assettable_bundle.write(unity_env.file.save())
+                    new_assettable_bundle.close()
 
     def delete_temp_files(self):
         shutil.rmtree(f"{self.output_path}\\temp", ignore_errors=True)
